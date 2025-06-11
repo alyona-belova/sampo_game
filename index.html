@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sampo Game</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="game-wrapper">
+      <div class="field">
+        <div
+          class="obstacle"
+          id="npc"
+          data-message="i'm waiting for my sampo."
+        ></div>
+        <div class="obstacle" id="rock" data-message="it's just a rock."></div>
+        <div class="character" id="main-character"></div>
+        <div class="prompt" id="interaction-prompt">E</div>
+      </div>
+      <div class="message-box" id="message-box"></div>
+    </div>
+
+    <script>
+      const mainCharacter = document.getElementById("main-character");
+      const field = document.querySelector(".field");
+      const obstacles = document.querySelectorAll(".obstacle");
+      const promptElem = document.getElementById("interaction-prompt");
+      const messageBox = document.getElementById("message-box");
+      let nearObstacle = null;
+      let isDialogOpen = false;
+
+      function getPosition(element) {
+        const styles = getComputedStyle(element);
+        return {
+          top: parseInt(styles.top),
+          left: parseInt(styles.left),
+        };
+      }
+
+      function getSize(element) {
+        const styles = getComputedStyle(element);
+        return {
+          width: parseInt(styles.width),
+          height: parseInt(styles.height),
+        };
+      }
+
+      function rectangleFrom(element, futurePosition = null) {
+        const { width, height } = getSize(element);
+        const position = futurePosition || getPosition(element);
+        return {
+          left: position.left,
+          top: position.top,
+          right: position.left + width,
+          bottom: position.top + height,
+          width: width,
+          height: height,
+        };
+      }
+
+      function isColliding(r1, r2) {
+        return !(
+          r1.right <= r2.left || // r1 is to the left of r2
+          r1.left >= r2.right ||
+          r1.bottom <= r2.top || // r1 is above r2
+          r1.top >= r2.bottom
+        );
+      }
+
+      function isNear(r1, r2, margin = 10) {
+        return !(
+          r1.right + margin < r2.left ||
+          r1.left - margin > r2.right ||
+          r1.bottom + margin < r2.top ||
+          r1.top - margin > r2.bottom
+        );
+      }
+
+      function moveCharacter(e) {
+        if (isDialogOpen) return;
+
+        const moveStep = 10;
+        const playerPosition = getPosition(mainCharacter);
+        const fieldSize = getSize(field);
+        const playerSize = getSize(mainCharacter);
+
+        const maxLeft = fieldSize.width - playerSize.width;
+        const maxTop = fieldSize.height - playerSize.height;
+
+        const key = e.key.toLowerCase();
+        switch (key) {
+          case "w":
+          case "arrowup":
+            playerPosition.top = Math.max(0, playerPosition.top - moveStep);
+            break;
+          case "s":
+          case "arrowdown":
+            playerPosition.top = Math.min(
+              maxTop,
+              playerPosition.top + moveStep
+            );
+            break;
+          case "a":
+          case "arrowleft":
+            playerPosition.left = Math.max(0, playerPosition.left - moveStep);
+            break;
+          case "d":
+          case "arrowright":
+            playerPosition.left = Math.min(
+              maxLeft,
+              playerPosition.left + moveStep
+            );
+            break;
+        }
+
+        const futureRectangle = rectangleFrom(mainCharacter, {
+          top: playerPosition.top,
+          left: playerPosition.left,
+        });
+
+        for (const obs of obstacles) {
+          const obsRectangle = rectangleFrom(obs);
+          if (isColliding(futureRectangle, obsRectangle)) {
+            return;
+          }
+        }
+
+        mainCharacter.style.top = playerPosition.top + "px";
+        mainCharacter.style.left = playerPosition.left + "px";
+
+        updateInteractionPrompt();
+      }
+
+      function updateInteractionPrompt() {
+        const playerRectangle = rectangleFrom(mainCharacter);
+        let found = null;
+
+        for (const obs of obstacles) {
+          const obsRectangle = rectangleFrom(obs);
+          if (isNear(playerRectangle, obsRectangle)) {
+            found = obs;
+            promptElem.style.left =
+              obsRectangle.left + obsRectangle.width / 2 - 10 + "px";
+            promptElem.style.top = obsRectangle.top - 30 + "px";
+            promptElem.style.display = "block";
+            break;
+          }
+        }
+
+        if (!found) {
+          promptElem.style.display = "none";
+        }
+
+        nearObstacle = found;
+      }
+
+      function handleInteraction(e) {
+        if (e.key === "e" || e.key === "E") {
+          if (nearObstacle) {
+            const message = nearObstacle.dataset.message;
+            if (message) {
+              messageBox.innerText = message;
+              messageBox.style.display = "block";
+              isDialogOpen = true;
+            }
+          }
+        }
+
+        if (e.key === "Enter") {
+          messageBox.style.display = "none";
+          isDialogOpen = false;
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        moveCharacter(e);
+        handleInteraction(e);
+      });
+    </script>
+  </body>
+</html>

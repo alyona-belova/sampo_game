@@ -91,10 +91,12 @@
         const key = e.key.toLowerCase();
         switch (key) {
           case "w":
+          case "ц":
           case "arrowup":
             playerPosition.top = Math.max(0, playerPosition.top - moveStep);
             break;
           case "s":
+          case "ы":
           case "arrowdown":
             playerPosition.top = Math.min(
               maxTop,
@@ -102,10 +104,12 @@
             );
             break;
           case "a":
+          case "ф":
           case "arrowleft":
             playerPosition.left = Math.max(0, playerPosition.left - moveStep);
             break;
           case "d":
+          case "в":
           case "arrowright":
             playerPosition.left = Math.min(
               maxLeft,
@@ -156,7 +160,8 @@
       }
 
       function handleInteraction(e) {
-        if (e.key === "e" || e.key === "E") {
+        const key = e.key.toLowerCase();
+        if (key === "e" || key === "у") {
           if (nearObstacle) {
             const message = nearObstacle.dataset.message;
             if (message) {
